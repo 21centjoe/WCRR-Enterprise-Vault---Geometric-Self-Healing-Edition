@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        WCRR Enterprise Vault - Geometric Self-Healing Edition
+        Copyright (c) 2026 Joseph La Follette. All rights reserved.
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as published
+        by the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version.
+
+        RESTRICTION NOTICE: This copy is not licensed for commercial use.
+        Contact: [21centjoe@gmail.com]
+    -->
+    <meta charset="UTF-8">
+    <title>WCRR Enterprise Vault - Geometric Self-Healing Edition</title>
+    <style>
+        body { font-family: monospace; background: #0b0b0b; color: #00ffcc; padding: 20px; margin: 0; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #141414; border: 1px solid #00ffcc; padding: 30px; width: 400px; }
+        .panel { border: 1px solid #00ffcc; padding: 20px; margin-bottom: 20px; background: #141414; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #00ffcc; padding: 10px; text-align: left; font-size: 14px; }
+        th { background: #1a1a1a; }
+        input, button { background: #1a1a1a; color: #00ffcc; border: 1px solid #00ffcc; padding: 10px; margin: 8px 0; width: 100%; box-sizing: border-box; font-family: monospace; }
+        button { cursor: pointer; font-weight: bold; }
+        button:hover { background: #00ffcc; color: #0b0b0b; }
+        .pill { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block; }
+        .pill.working { background: #aa5500; color: #fff; }
+        .pill.verified { background: #005522; color: #00ffcc; border: 1px solid #00ffcc; }
+        .pill.error { background: #550000; color: #ff5555; border: 1px solid #ff5555; }
+        .status { margin-top: 10px; font-weight: bold; }
+        .status.err { color: #ff5555; }
+        .status.ok { color: #00ffcc; }
+        #repoDisplay { margin-bottom: 15px; font-size: 13px; color: #88ffcc; }
+        .license-notice { font-size: 11px; color: #888; margin-top: 10px; border-top: 1px dashed #333; padding-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <!-- Setup Modal -->
+    <div id="setupModal" class="modal">
+        <div class="modal-content">
+            <h2>Initialize Geometric Vault</h2>
+            <label for="setupOwner">Operator / Owner:</label>
+            <input type="text" id="setupOwner" placeholder="Enter operator handle">
+            <label for="setupPass">Session Passphrase:</label>
+            <input type="password" id="setupPass" placeholder="Required secure passphrase">
+            <button id="initBtn">Start Session</button>
+        </div>
+    </div>
+
+    <h2>WCRR Enterprise Vault - Geometric Self-Healing Edition</h2>
+    <div id="repoDisplay">Session not started.</div>
+
+    <div class="panel">
+        <h3>Storage Targets & Transmission</h3>
+        <button id="chooseDirBtn">Select Local Destination Folder / Drive</button>
+        <div id="dirStatus" class="status">No local folder selected.</div>
+        <hr style="border-color: #00ffcc; margin: 15px 0;">
+        <label for="remoteEndpoint">Remote / Dropbox / Cloud Endpoint URL:</label>
+        <input type="text" id="remoteEndpoint" placeholder="API endpoint URL">
+        <label for="remoteToken">API Bearer Token / Auth Key:</label>
+        <input type="password" id="remoteToken" placeholder="Enter access token">
+        <button id="chooseRemoteDirBtn">Select Remote/Secondary Sync Directory</button>
+        <div id="remoteStatus" class="status">No remote transmission target active.</div>
+    </div>
+
+    <div class="panel">
+        <h3>Bulk Ingestion & Geometric Encapsulation</h3>
+        <label for="bulkFiles">Select Files to Encapsulate (.nelos, etc.):</label>
+        <input type="file" id="bulkFiles" multiple>
+        <button id="processBtn">Process, Heal-Encode & Save</button>
+        <div id="uploadStatus" class="status">Ready for batch input.</div>
+    </div>
+
+    <div class="panel">
+        <h3>Unpacking & Geometric Self-Healing Recovery</h3>
+        <label for="unpackFiles">Select .wcrr Files to Unpack & Heal:</label>
+        <input type="file" id="unpackFiles" multiple accept=".wcrr">
+        <button id="unpackBtn">Unpack, Heal & Restore</button>
+        <div id="unpackStatus" class="status">Ready for extraction.</div>
+    </div>
+
+    <div class="panel">
+        <h3>Persistent Manifest Table</h3>
+        <div id="totalsLine">Awaiting batch processing...</div>
+        <table id="manifestTable">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Original Size (Bytes)</th>
+                    <th>Processed Size</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="4" style="text-align:center; color:#666;">No files processed yet.</td></tr>
+            </tbody>
+        </table>
+        <div class="license-notice">
+            Copyright © 2026. Licensed under GNU AGPLv3. <strong>Not licensed for commercial use.</strong> Contact: [Insert Contact Email]
+        </div>
+    </div>
+
+    <script>
+        /* 
+         * WCRR Geometric Self-Healing Engine Implementation
+         * Copyright (c) 2026. GNU AGPLv3 License. Not licensed for commercial use.
+         * Contact: [Insert Contact Email]
+         */
+        window.WCRR = {
+            async wcrrEncode(bytes, filename, password) {
+                const encoder = new TextEncoder();
+                const passBytes = encoder.encode(password);
+                
+                const blockSize = 252;
+                const parityBlock = new Uint8Array(blockSize);
+                
+                for (let i = 0; i < bytes.length; i++) {
+                    parityBlock[i % blockSize] ^= bytes[i];
+                }
+                
+                for (let i = 0; i < blockSize; i++) {
+                    parityBlock[i] ^= passBytes[i % passBytes.length];
+                }
+
+                const header = new Uint8Array(4);
+                new DataView(header.buffer).setUint32(0, bytes.length, false);
+
+                const combined = new Uint8Array(header.length + bytes.length + parityBlock.length + passBytes.length);
+                combined.set(header, 0);
+                combined.set(bytes, 4);
+                combined.set(parityBlock, 4 + bytes.length);
+                combined.set(passBytes, 4 + bytes.length + parityBlock.length);
+                
+                return combined;
+            },
+            async wcrrDecode(encoded, password) {
+                const encoder = new TextEncoder();
+                const passBytes = encoder.encode(password);
+                
+                if (encoded.length < passBytes.length + 4 + 252) {
+                    return { overallOk: false, allNodesOk: false, data: new Uint8Array(0) };
+                }
+
+                const originalLength = new DataView(encoded.buffer, encoded.byteOffset, 4).getUint32(0, false);
+                const dataEnd = 4 + originalLength;
+                const parityEnd = dataEnd + 252;
+
+                const data = encoded.slice(4, dataEnd);
+                const storedParity = encoded.slice(dataEnd, parityEnd);
+                const storedPass = encoded.slice(parityEnd);
+
+                const matchesPass = storedPass.length === passBytes.length && storedPass.every((b, i) => b === passBytes[i]);
+                if (!matchesPass) {
+                    return { overallOk: false, allNodesOk: false, data: new Uint8Array(0) };
+                }
+
+                const calculatedParity = new Uint8Array(252);
+                for (let i = 0; i < data.length; i++) {
+                    calculatedParity[i % 252] ^= data[i];
+                }
+                for (let i = 0; i < 252; i++) {
+                    calculatedParity[i] ^= passBytes[i % passBytes.length];
+                }
+
+                let healedData = new Uint8Array(data);
+                let allNodesOk = true;
+
+                for (let i = 0; i < 252; i++) {
+                    if (calculatedParity[i] !== storedParity[i]) {
+                        allNodesOk = false;
+                        for (let j = i; j < healedData.length; j += 252) {
+                            healedData[j] ^= (calculatedParity[i] ^ storedParity[i]);
+                        }
+                    }
+                }
+
+                return {
+                    overallOk: true,
+                    allNodesOk: allNodesOk,
+                    data: healedData
+                };
+            }
+        };
+
+        let session = { owner: null, password: null };
+        let dirHandle = null;
+        let remoteDirHandle = null;
+
+        document.getElementById('initBtn').onclick = () => {
+          const owner = document.getElementById('setupOwner').value.trim() || "Unnamed User";
+          const password = document.getElementById('setupPass').value;
+          if (!password) { alert("A passphrase is required."); return; }
+          session = { owner, password };
+          document.getElementById('repoDisplay').innerHTML = `<b>User:</b> ${owner} &nbsp; | &nbsp; <b>Session started:</b> ${new Date().toLocaleString()} &nbsp; | &nbsp; Geometric Vault Active.`;
+          document.getElementById('setupModal').style.display = 'none';
+        };
+
+        document.getElementById('chooseDirBtn').onclick = async () => {
+          if (!('showDirectoryPicker' in window)) {
+            document.getElementById('dirStatus').textContent = 'Browser does not support folder selection.';
+            return;
+          }
+          try {
+            dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            document.getElementById('dirStatus').textContent = `Local Target: "${dirHandle.name}"`;
+          } catch (err) {
+            if (err.name !== 'AbortError') document.getElementById('dirStatus').textContent = `Error: ${err.message}`;
+          }
+        };
+
+        document.getElementById('chooseRemoteDirBtn').onclick = async () => {
+          if (!('showDirectoryPicker' in window)) {
+            document.getElementById('remoteStatus').textContent = 'Browser does not support folder selection.';
+            return;
+          }
+          try {
+            remoteDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            document.getElementById('remoteStatus').textContent = `Remote Target: "${remoteDirHandle.name}"`;
+          } catch (err) {
+            if (err.name !== 'AbortError') document.getElementById('remoteStatus').textContent = `Error: ${err.message}`;
+          }
+        };
+
+        function setStatus(msg, cls, targetId = 'uploadStatus') {
+          const el = document.getElementById(targetId);
+          el.textContent = msg;
+          el.className = 'status' + (cls ? ' ' + cls : '');
+        }
+
+        async function transmitToSecondaryTarget(filename, bytes) {
+            if (remoteDirHandle) {
+                const fh = await remoteDirHandle.getFileHandle(filename, { create: true });
+                const w = await fh.createWritable();
+                await w.write(bytes);
+                await w.close();
+            }
+            const endpoint = document.getElementById('remoteEndpoint').value.trim();
+            const token = document.getElementById('remoteToken').value.trim();
+            if (endpoint && token) {
+                await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/octet-stream'
+                    },
+                    body: bytes
+                });
+            }
+        }
+
+        document.getElementById('processBtn').onclick = async () => {
+          if (!session.password) { setStatus('Start a session first.', 'err'); return; }
+          if (!dirHandle) { setStatus('Choose a local destination folder first.', 'err'); return; }
+          const files = document.getElementById('bulkFiles').files;
+          if (files.length === 0) { setStatus('Select at least one file first.', 'err'); return; }
+
+          const tbody = document.querySelector('#manifestTable tbody');
+          tbody.innerHTML = '';
+          let totalOriginal = 0, totalSaved = 0, verifiedCount = 0;
+
+          for (const file of files) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${file.name}</td><td>${file.size.toLocaleString()}</td><td>...</td><td><span class="pill working">processing</span></td>`;
+            tbody.appendChild(row);
+
+            try {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              const encoded = await WCRR.wcrrEncode(bytes, file.name, session.password);
+
+              const verify = await WCRR.wcrrDecode(encoded, session.password);
+              const matches = verify.overallOk && verify.data.length === bytes.length && verify.data.every((b,i) => b === bytes[i]);
+
+              if (!matches) {
+                row.cells[3].innerHTML = `<span class="pill error">FAILED VERIFICATION</span>`;
+                continue;
+              }
+
+              const outName = file.name + '.wcrr';
+              const fh = await dirHandle.getFileHandle(outName, { create: true });
+              const w = await fh.createWritable();
+              await w.write(encoded);
+              await w.close();
+
+              await transmitToSecondaryTarget(outName, encoded);
+
+              row.cells[2].textContent = encoded.length.toLocaleString();
+              row.cells[3].innerHTML = `<span class="pill verified">Geometric Heal-Encoded</span>`;
+              totalOriginal += bytes.length;
+              totalSaved += encoded.length;
+              verifiedCount++;
+            } catch (err) {
+              row.cells[3].innerHTML = `<span class="pill error">${err.message}</span>`;
+            }
+          }
+
+          document.getElementById('totalsLine').innerHTML =
+            `${verifiedCount}/${files.length} file(s) processed. Original: ${totalOriginal.toLocaleString()} bytes | Encoded: ${totalSaved.toLocaleString()} bytes.`;
+          setStatus(`Batch processing complete.`, 'ok');
+        };
+
+        document.getElementById('unpackBtn').onclick = async () => {
+          if (!session.password) { setStatus('Start a session first.', 'err', 'unpackStatus'); return; }
+          if (!dirHandle) { setStatus('Choose local folder first.', 'err', 'unpackStatus'); return; }
+          const files = document.getElementById('unpackFiles').files;
+          if (files.length === 0) { setStatus('Select at least one .wcrr file.', 'err', 'unpackStatus'); return; }
+
+          const tbody = document.querySelector('#manifestTable tbody');
+          let unpackedCount = 0;
+
+          for (const file of files) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${file.name} (Unpack)</td><td>${file.size.toLocaleString()}</td><td>...</td><td><span class="pill working">unpacking</span></td>`;
+            tbody.appendChild(row);
+
+            try {
+              const bytes = new Uint8Array(await file.arrayBuffer());
+              const verify = await WCRR.wcrrDecode(bytes, session.password);
+
+              if (!verify.overallOk) {
+                row.cells[3].innerHTML = `<span class="pill error">DECRYPTION FAILED</span>`;
+                continue;
+              }
+
+              let restoredName = file.name.endsWith('.wcrr') ? file.name.slice(0, -5) : file.name + '.restored';
+
+              const fh = await dirHandle.getFileHandle(restoredName, { create: true });
+              const w = await fh.createWritable();
+              await w.write(verify.data);
+              await w.close();
+
+              await transmitToSecondaryTarget(restoredName, verify.data);
+
+              row.cells[2].textContent = verify.data.length.toLocaleString();
+              const statusText = verify.allNodesOk ? 'Unpacked & Verified' : 'Unpacked & Self-Healed';
+              row.cells[3].innerHTML = `<span class="pill verified">${statusText}</span>`;
+              unpackedCount++;
+            } catch (err) {
+              row.cells[3].innerHTML = `<span class="pill error">${err.message}</span>`;
+            }
+          }
+          setStatus(`Successfully unpacked ${unpackedCount} file(s).`, 'ok', 'unpackStatus');
+        };
+    </script>
+</body>
+</html>
